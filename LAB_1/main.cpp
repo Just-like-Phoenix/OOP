@@ -225,7 +225,11 @@ public:
 	Person() : TicketNum(0) {}
 	Person(Person& obj) :TicketNum (obj.TicketNum) {}
 
-	double MAX_CASH_IN, MAX_CASH_OUT;
+	double MAX_CASH_IN_LEGAL = 100000, MAX_CASH_OUT_LEGAL=1000000;
+	double MAX_CASH_IN_PHY = 1500, MAX_CASH_OUT_PHY = 5000;
+
+	double GetCash() { return BYN; }
+	void SetCash(double cash) { BYN = cash; }
 
 	int GetTicket() { return TicketNum; }
 	void SetTicket(int _tickNum) { TicketNum = _tickNum; }
@@ -239,7 +243,7 @@ public:
 class phy_entity : public Person
 {
 public:
-	phy_entity() { Person::MAX_CASH_IN = 1500; Person::MAX_CASH_OUT = 5000; }
+	phy_entity() { }
 	
 	void ConfirmTicket() {
 		string tmp;
@@ -253,7 +257,7 @@ public:
 class legal_entity : public Person
 {
 public:
-	legal_entity() { Person::MAX_CASH_IN = 100000; Person::MAX_CASH_OUT = 1000000; }
+	legal_entity() { }
 
 	void ConfirmTicket() {
 		string tmp;
@@ -367,53 +371,185 @@ public:
 	}
 };
 
-vector<SmartPtr<Transaction<legal_entity>>> arr1;
-vector<SmartPtr<Transaction<phy_entity>>> arr2;
+int phy_counter = 1;
+int leg_counter = 1;
+vector<SmartPtr<Transaction<legal_entity>>> leg;
+vector<SmartPtr<Transaction<phy_entity>>> phy;
 
 void add_phy()
 {
 	SmartPtr<Transaction<phy_entity>> tmp(new Transaction<phy_entity>);
 	tmp->currentState->ConfirmTicket();
-	arr2.push_back(tmp);
-	tmp->currentState->SetTicket(arr2.size());
+	phy.push_back(tmp);
+	tmp->currentState->SetTicket(phy_counter);
 	tmp->Commit();
+	phy_counter++;
 }
 
 void add_leg()
 {
 	SmartPtr<Transaction<legal_entity>> tmp(new Transaction<legal_entity>);
 	tmp->currentState->ConfirmTicket();
-	arr1.push_back(tmp);
-	tmp->currentState->SetTicket(arr1.size());
+	leg.push_back(tmp);
+	tmp->currentState->SetTicket(leg_counter);
 	tmp->Commit();
+	leg_counter++;
 }
 
 void show_phy()
 {
-	if (arr2.size() == 0)
+	if (phy.size() == 0)
 	{
 		cout << "EMPTY" << endl;
 	}
 	else
 	{
-		for (int i = 0; i < arr2.size(); i++)
+		for (int i = 0; i < phy.size(); i++)
 		{
-			cout << arr2[i]->currentState->GetTicket() << " " << arr2[i]->currentState->GetName() << endl;
+			cout << phy[i]->currentState->GetTicket() << " " << phy[i]->currentState->GetName() << endl;
 		}
 	}
 }
 
 void show_leg()
 {
-	if (arr1.size() == 0)
+	if (leg.size() == 0)
 	{
 		cout << "EMPTY" << endl;
 	}
 	else
 	{
-		for (int i = 0; i < arr1.size(); i++)
+		for (int i = 0; i < leg.size(); i++)
 		{
-			cout << arr1[i]->currentState->GetTicket() << " " << arr1[i]->currentState->GetName() << endl;
+			cout << leg[i]->currentState->GetTicket() << " " << leg[i]->currentState->GetName() << endl;
+		}
+	}
+}
+
+void cash_in_phy()
+{
+	int cash;
+
+	if (phy.size() == 0)
+	{
+		cout << "EMPTY" << endl;
+	}
+	else
+	{
+		phy[0]->BeginTransactions();
+		cout << "Введите сумму: ";
+		enterNum(&cash);
+		phy[0]->currentState->SetCash(phy[0]->currentState->GetCash() + cash);
+		if ((double)cash <= phy[0]->currentState->MAX_CASH_IN_PHY)
+		{
+			phy[0]->Commit();
+			phy.erase(phy.begin() + 0);
+		}
+		else {
+			system("cls");
+			cout << "Сумма превышает допустимую!";
+			phy[0]->deleteTransactions();
+		}
+	}
+}
+
+void cash_in_leg()
+{
+	int cash;
+
+	if (leg.size() == 0)
+	{
+		cout << "EMPTY" << endl;
+	}
+	else
+	{
+		leg[0]->BeginTransactions();
+		cout << "Введите сумму: ";
+		enterNum(&cash);
+		leg[0]->currentState->SetCash(leg[0]->currentState->GetCash() + cash);
+		if ((double)cash <= leg[0]->currentState->MAX_CASH_IN_LEGAL)
+		{
+			leg[0]->Commit();
+			leg.erase(leg.begin() + 0);
+		}
+		else {
+			system("cls");
+			cout << "Сумма превышает допустимую!";
+			leg[0]->deleteTransactions();
+		}
+	}
+}
+
+void cash_out_phy()
+{
+	int cash;
+
+	if (phy.size() == 0)
+	{
+		cout << "EMPTY" << endl;
+	}
+	else
+	{
+		phy[0]->BeginTransactions();
+		cout << "Введите сумму: ";
+		enterNum(&cash);
+		phy[0]->currentState->SetCash(phy[0]->currentState->GetCash() - cash);
+		
+		if (phy[0]->currentState->GetCash() - cash < 0)
+		{
+			system("cls");
+			cout << "На карте недостаточно средств!";
+			phy[0]->deleteTransactions();
+		}
+		else
+		{
+			if ((double)cash <= phy[0]->currentState->MAX_CASH_OUT_PHY)
+			{
+				phy[0]->Commit();
+				phy.erase(phy.begin() + 0);
+			}
+			else {
+				system("cls");
+				cout << "Сумма превышает допустимую!";
+				phy[0]->deleteTransactions();
+			}
+		}
+	}
+}
+
+void cash_out_leg()
+{
+	int cash;
+
+	if (leg.size() == 0)
+	{
+		cout << "EMPTY" << endl;
+	}
+	else
+	{
+		leg[0]->BeginTransactions();
+		cout << "Введите сумму: ";
+		enterNum(&cash);
+		leg[0]->currentState->SetCash(leg[0]->currentState->GetCash() - cash);
+
+		if (leg[0]->currentState->GetCash() - cash < 0)
+		{
+			system("cls");
+			cout << "На карте недостаточно средств!";
+			leg[0]->deleteTransactions();
+		}
+		else
+		{
+			if ((double)cash <= leg[0]->currentState->MAX_CASH_OUT_LEGAL)
+			{
+				leg[0]->Commit();
+				leg.erase(leg.begin() + 0);
+			}
+			else {
+				system("cls");
+				cout << "Сумма превышает допустимую!";
+				leg[0]->deleteTransactions();
+			}
 		}
 	}
 }
@@ -440,8 +576,18 @@ int main()
 		menu.sub[2].CreateMenu(2, "Физ. лицо", "Юр. лицо");
 		{
 			menu.sub[2].sub[0].CreateMenu(2, "Снять", "Пополнить");
+			{
+				menu.sub[2].sub[0].function[1] = cash_in_phy;
+
+				menu.sub[2].sub[0].function[0] = cash_out_phy;
+			}
 
 			menu.sub[2].sub[1].CreateMenu(2, "Снять", "Пополнить");
+			{
+				menu.sub[2].sub[1].function[1] = cash_in_leg;
+
+				menu.sub[2].sub[1].function[0] = cash_out_leg;
+			}
 		}
 	}
 
