@@ -1,376 +1,228 @@
 #include <iostream>
+#include <stdlib.h>
+#include <time.h>
 #include <conio.h>
 #include <stdarg.h>
-#include <fstream>
 #include <Windows.h>
+#include <string>
+#include <fstream>
+#include <iomanip>
+#include <sstream>
+#include <deque>
+#include <vector>
 
 using namespace std;
 
-int keyget(int num)
-{
-	char button = 0;
-	button = _getch();
-	if (button == 27) return 69;
-	if (button == 13) return 27;
-	if (button == 72)  num--; // КОД 72 соответсвует Стрелке вверх
-	if (button == 80)  num++; // КОД 80 соответсвует Стрелке вниз
-	return num;
+void enterNum(int* num) {
+	*num = 0;
+
+	int counter = 0;
+
+	while (counter < 9) {
+		char butt = _getch();
+		if (butt > 47 && butt < 58) {
+			*num = (*num * 10) + (butt - 48);
+			printf("%c", butt);
+			counter++;
+		}
+		else if (butt == 8 && counter != 0) {
+			*num /= 10;
+			if (*num == 1) {
+				*num = 0;
+			}
+			putchar('\b');
+			printf(" ");
+			putchar('\b');
+			if (counter > 0) counter--;
+		}
+		else if (butt == 13) {
+			break;
+		}
+	}
+	printf("\n");
 }
 
-class Array
-{
+void SetColor(int text, int bg) {
+	HANDLE hStdOut = GetStdHandle(STD_OUTPUT_HANDLE);
+	SetConsoleTextAttribute(hStdOut, (WORD)((bg << 4) | text));
+}
+
+class Menu {
+	int bg = 2;
+	int countParam;
+	int paragraph;
+	int border;
+	bool running = true;
+
+	typedef void (*voidFunctionPtr)();
+
+	Menu* main = this, * parent = NULL;
+	string* arr;
+	string header;
+
 public:
 
-	char* c_array_A = new char[length];
-	float* f_array_A = new float[length];
-	int* i_array_A = new int[length];
-	char* c_array_B = new char[length];
-	float* f_array_B = new float[length];
-	int* i_array_B = new int[length];
+	Menu* sub;
+	voidFunctionPtr* function = NULL;
 
-	Array()
-	{
-		length = 1; format = 0;
-		char* c_array_A = 0;
-		float* f_array_A = 0;
-		int* i_array_A = 0;
-		char* c_array_B = 0;
-		float* f_array_B = 0;
-		int* i_array_B = 0;
+	Menu() { countParam = 0; paragraph = 1; arr = NULL; border = 0; sub = NULL; }
+
+	void CreateMenu(int num, const char* name, ...) {
+		if (main->parent == NULL) main->header = "Главное меню";
+
+		main->border = num;
+		va_list args;
+		va_start(args, num);
+
+		main->function = new voidFunctionPtr[num];
+		for (int i = 0; i < num; i++) main->function[i] = NULL;
+		main->arr = new string[num];
+		main->sub = new Menu[num];
+		for (int i = 0; i < num; i++) main->sub[i].parent = main;
+		int i = 0;
+		while (num != 0) {
+			main->arr[i] = va_arg(args, char*);
+			main->countParam++;
+			i++;
+			--num;
+		}
+		va_end(args);
 	}
 
-	void i_array(unsigned int FORMAT, unsigned int LENGTH, int* ARRAY_A, int* ARRAY_B)
-	{
-		format = FORMAT;
-		length = LENGTH;
-		for (unsigned int i = 0; i < length; i++)
-		{
-			i_array_A[i] = ARRAY_A[i];
-			i_array_B[i] = ARRAY_B[i];
-		}
-	}
-
-	void f_array(unsigned int FORMAT, unsigned int LENGTH, float ARRAY_A[], float ARRAY_B[])
-	{
-		format = FORMAT;
-		length = LENGTH;
-		for (unsigned int i = 0; i < length; i++)
-		{
-			f_array_A[i] = ARRAY_A[i];
-			f_array_B[i] = ARRAY_B[i];
-		}
-	}
-
-	void c_array(unsigned int FORMAT, unsigned int LENGTH, char ARRAY_A[], char ARRAY_B[])
-	{
-		format = FORMAT;
-		length = LENGTH;
-		for (unsigned int i = 0; i < length; i++)
-		{
-			c_array_A[i] = ARRAY_A[i];
-			c_array_B[i] = ARRAY_B[i];
-		}
-	}
-
-	void sw_format(unsigned int FORMAT) { format = FORMAT; }
-
-	void PRINT_IN_LINE()
-	{
-		if (format == 1)
-		{
-			for (unsigned int i = 0; i < length; i++)
-			{
-				cout << "A[" << i << "]= " << i_array_A[i] << " ";
-			}
-			cout << endl;
-			for (unsigned int i = 0; i < length; i++)
-			{
-				cout << "B[" << i << "]= " << i_array_B[i] << " ";
-			}
-		}
-		if (format == 2)
-		{
-			for (unsigned int i = 0; i < length; i++)
-			{
-				cout << "A[" << i << "]= " << f_array_A[i] << " ";
-			}
-			cout << endl;
-			for (unsigned int i = 0; i < length; i++)
-			{
-				cout << "B[" << i << "]= " << f_array_B[i] << " ";
-			}
-		}
-		if (format == 3)
-		{
-			for (unsigned int i = 0; i < length; i++)
-			{
-				cout << "A[" << i << "]= " << c_array_A[i] << " ";
-			}
-			cout << endl;
-			for (unsigned int i = 0; i < length; i++)
-			{
-				cout << "B[" << i << "]= " << c_array_B[i] << " ";
-			}
-		}
-	}
-	void PRINT_IN_COLUMN()
-	{
-		if (format == 1)
-		{
-			for (unsigned int i = 0; i < length; i++)
-			{
-				cout << "A[" << i << "]= " << i_array_A[i] << " ";
-				cout << "B[" << i << "]= " << i_array_B[i] << "\n";
-			}
-		}
-		if (format == 2)
-		{
-			for (unsigned int i = 0; i < length; i++)
-			{
-				cout << "A[" << i << "]= " << f_array_A[i] << " ";
-				cout << "B[" << i << "]= " << f_array_B[i] << "\n";
-			}
-		}
-		if (format == 3)
-		{
-			for (unsigned int i = 0; i < length; i++)
-			{
-				cout << "A[" << i << "]= " << c_array_A[i] << " ";
-				cout << "B[" << i << "]= " << c_array_B[i] << "\n";
-			}
-		}
-	}
-	void ARRAY_CROSSING()
-	{
-		if (format == 1)
-		{
-			for (unsigned int j = 0; j < length; j++)
-			{
-				for (unsigned int i = 0; i < length; i++)
-				{
-					if (i_array_A[j] == i_array_B[i])
-					{
-						cout << "A[" << j << "]= " << i_array_A[j] << " ";
-						cout << "B[" << i << "]= " << i_array_B[i] << "\n";
-						break;
-					}
-				}
-			}
-		}
-		if (format == 2)
-		{
-			for (unsigned int j = 0; j < length; j++)
-			{
-				for (unsigned int i = 0; i < length; i++)
-				{
-					if (f_array_A[j] == f_array_B[i])
-					{
-						cout << "A[" << j << "]= " << f_array_A[j] << " ";
-						cout << "B[" << i << "]= " << f_array_B[i] << "\n";
-						break;
-					}
-				}
-			}
-		}
-		if (format == 3)
-		{
-			for (unsigned int j = 0; j < length; j++)
-			{
-				for (unsigned int i = 0; i < length; i++)
-				{
-					if (c_array_A[j] == c_array_B[i])
-					{
-						cout << "A[" << j << "]= " << c_array_A[j] << " ";
-						cout << "B[" << i << "]= " << c_array_B[i] << "\n";
-						break;
-					}
-				}
-			}
-		}
-	}
-	void ARRAY_CONECT()
-	{
-		if (format == 1)
-		{
-			int j = 0;
-			for (unsigned int i = 0; i < length; i++)
-			{
-				cout << "C[" << i << "]= " << i_array_A[i] << "\n";
-				j = i;
-			}
-			j = j + 1;
-			for (unsigned int i = 0; i < length; i++)
-			{
-				cout << "C[" << i + j << "]= " << i_array_B[i] << "\n";
-			}
-		}
-		if (format == 2)
-		{
-			int j = 0;
-			for (unsigned int i = 0; i < length; i++)
-			{
-				cout << "C[" << i << "]= " << f_array_A[i] << "\n";
-				j = i;
-			}
-			j = j + 1;
-			for (unsigned int i = 0; i < length; i++)
-			{
-				cout << "C[" << i + j << "]= " << f_array_B[i] << "\n";
-			}
-		}
-		if (format == 3)
-		{
-			int j = 0;
-			for (unsigned int i = 0; i < length; i++)
-			{
-				cout << "C[" << i << "]= " << c_array_A[i] << "\n";
-				j = i;
-			}
-			j = j + 1;
-			for (unsigned int i = 0; i < length; i++)
-			{
-				cout << "C[" << i + j << "]= " << c_array_B[i] << "\n";
-			}
-		}
-	}
-private:
-	unsigned int length, format;
-};
-
-void SET_ARRAY(int num, Array* p)
-{
-	int length;
-	bool prov;
-	unsigned int format;
-
-	cout << "Enter a length: ";
-	cin >> length;
-
-	do
-	{
-		cout << "Chose format 1)int 2)float 3)char: ";
-		cin >> format;
-
-		if (format == 1 && format == 2 && format == 3)
-		{
-			prov = true;
-		}
-		else
-		{
-			prov = false;
-		}
-	} while (prov == true);
-
-	char* c_array_A = new char[length];
-	float* f_array_A = new float[length];
-	int* i_array_A = new int[length];
-	char* c_array_B = new char[length];
-	float* f_array_B = new float[length];
-	int* i_array_B = new int[length];
-
-	switch (format)
-	{
-	case 1:
-
-		for (int i = 0; i < length; i++) {
-			cout << "A " << i << ": ";
-			cin >> i_array_A[i];
-		}
-		for (int i = 0; i < length; i++) {
-			cout << "B " << i << ": ";
-			cin >> i_array_B[i];
-		}
-		p->i_array(format, length, i_array_A, i_array_B);
-		break;
-	case 2:
-
-		for (int i = 0; i < length; i++) {
-			cout << "A " << i << ": ";
-			cin >> f_array_A[i];
-		}
-		for (int i = 0; i < length; i++) {
-			cout << "B " << i << ": ";
-			cin >> f_array_B[i];
-		}
-		p->f_array(format, length, f_array_A, f_array_B);
-		break;
-	case 3:
-
-		for (int i = 0; i < length; i++) {
-			cout << "A " << i << ": ";
-			cin >> c_array_A[i];
-		}
-		for (int i = 0; i < length; i++) {
-			cout << "B " << i << ": ";
-			cin >> c_array_B[i];
-		}
-		p->c_array(format, length, c_array_A, c_array_B);
-		break;
-	}
-}
-
-
-
-void main_menu(int num)
-{
-	Array array;
-
-	int key = 0;
-	int buff = 0;
-	const int SIZE = 5;
-	do
-	{
+	void ShowMenu() {
 		system("cls");
+		SetConsoleCP(1251);
+		SetConsoleOutputCP(1251);
+		string menu;
+		if (main->parent != NULL) main->header = main->parent->arr[main->parent->paragraph - 1];
+		menu += "\n\n\n\n\n\n\n\n\t\t\t\t\t\t+--------------------+\n\t\t\t\t\t\t|";
 
-		if (buff == 27)
-		{
-			switch (key)
-			{
-			case 0:
-				SET_ARRAY(0, &array);
-				break;
-			case 1:
-				array.PRINT_IN_LINE();
-				_getch();
-				break;
-			case 2:
-				array.PRINT_IN_COLUMN();
-				_getch();
-				break;
-			case 3:
-				array.ARRAY_CROSSING();
-				_getch();
-				break;
-			case 4:
-				array.ARRAY_CONECT();
-				_getch();
-				break;
+		for (int j = 0; j < (20 - main->header.length()) / 2; j++) menu += " ";
+		menu += main->header;
+		for (int j = 0; j < 20 - (main->header.length() + (20 - main->header.length()) / 2); j++) menu += " ";
+		menu += "|\n\t\t\t\t\t\t+--------------------+\n";
+
+		if (main->arr != NULL) {
+			for (int i = 0; i < main->countParam; i++) {
+				menu += "\t\t\t\t\t\t|";
+				if (i == (main->paragraph - 1)) {
+					cout << menu;
+					SetColor(0, bg);
+					cout << main->arr[i];
+					if (main->arr[i].length() < 20) {
+						for (int j = 0; j < 20 - main->arr[i].length(); j++) cout << " ";
+					}
+					SetColor(7, 0);
+					menu.clear();
+				}
+				else {
+					menu += main->arr[i];
+					if (main->arr[i].length() < 20) {
+						for (int j = 0; j < 20 - main->arr[i].length(); j++) menu += " ";
+					}
+				}
+				menu += "|\n\t\t\t\t\t\t+--------------------+\n";
 			}
-			system("cls");
+			cout << menu;
 		}
-		if (buff < 0)
-			key = SIZE - 1;
-		else
-			key = buff % SIZE;
-		char** title;
-		title = new char* [SIZE] {(char*)"Set array A and B", (char*)"Print in line", (char*)"Print in column", (char*)"Array crossing", (char*)"Array conect"};
-		for (int i = 0; i < SIZE; i++)
-		{
-			if (key == i)
-			{
-				std::cout << ">" << title[i] << "<\n";
-			}
-			else
-			{
-				std::cout << title[i] << "\n";
+		else main = main->parent;
+
+	}
+
+	void Navigation(bool* running) {
+		char keycap = _getch();
+
+		if (keycap == 80) main->paragraph++;
+		else if (keycap == 72) main->paragraph--;
+		else if (keycap == 13) {
+			if (main->function[main->paragraph - 1] == NULL && main->sub[main->paragraph - 1].arr != NULL) main = &main->sub[main->paragraph - 1];
+			else if (main->function[main->paragraph - 1] != NULL) {
+				system("cls");
+				main->function[main->paragraph - 1]();
+				_getch();
 			}
 		}
-		buff = keyget(key);
-	} while (buff != 69);
-	return;
-}
+		else if (keycap == 27) {
+			if (main->parent != NULL) {
+				main->paragraph = 1;
+				main = main->parent;
+			}
+			else if (main->parent == NULL) *running = false;
+		}
+		else if (keycap == 83) {
+			vector<string> arr = { "Синий", "Зелёный", "Голубой", "Красный", "Розовый", "Жёлтый" };
+			int paragraph = 0;
+			char keycap = NULL;
+			while (keycap != 27) {
+				system("cls");
+				SetConsoleCP(1251);
+				SetConsoleOutputCP(1251);
+
+				string menu;
+				string header = "НАСТРОЙКА";
+				menu += "\n\n\n\n\n\n\n\n\t\t\t\t\t\t+--------------------+\n\t\t\t\t\t\t|";
+
+				for (int j = 0; j < (20 - header.length()) / 2; j++) menu += " ";
+				menu += header;
+				for (int j = 0; j < 20 - (header.length() + (20 - header.length()) / 2); j++) menu += " ";
+				menu += "|\n\t\t\t\t\t\t+--------------------+\n";
+
+				for (int i = 0; i < 6; i++) {
+					menu += "\t\t\t\t\t\t|";
+					if (i == paragraph) {
+						cout << menu;
+						SetColor(0, i + 1);
+						cout << arr[i];
+						if (arr[i].length() < 20) {
+							for (int j = 0; j < 20 - arr[i].length(); j++) cout << " ";
+						}
+						SetColor(7, 0);
+						menu.clear();
+					}
+					else {
+						menu += arr[i];
+						if (arr[i].length() < 20) {
+							for (int j = 0; j < 20 - arr[i].length(); j++) menu += " ";
+						}
+					}
+					menu += "|\n\t\t\t\t\t\t+--------------------+\n";
+				}
+				cout << menu;
+
+				keycap = _getch();
+
+				if (keycap == 80) paragraph++;
+				else if (keycap == 72) paragraph--;
+				else if (keycap == 13) {
+					bg = paragraph + 1;
+					keycap = 27;
+				}
+
+				if (paragraph > 5) paragraph = 0;
+				else if (paragraph < 0) paragraph = 5;
+			}
+		}
+
+		if (main->paragraph > main->border) main->paragraph = 1;
+		else if (main->paragraph < 1) main->paragraph = main->border;
+	}
+
+	void StartMenu() {
+		while (running) {
+			ShowMenu();
+			Navigation(&running);
+		}
+	}
+};
 
 int main()
 {
-	main_menu(0);
+	Menu menu;
+
+	menu.CreateMenu(3, "Получить талон", "Показать очередь", "Работа с клиентами");
+	{
+
+	}
+
+	menu.StartMenu();
 }
