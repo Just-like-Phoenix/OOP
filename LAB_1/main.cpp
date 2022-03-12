@@ -249,7 +249,7 @@ public:
 		string tmp;
 
 		cout << "Введите инициалы ( Фамилия И.О.): ";
-		cin >> tmp;
+		getline(cin, tmp);
 		Person::SetName(tmp);
 	}
 };
@@ -263,7 +263,7 @@ public:
 		string tmp;
 
 		cout << "Введите название организации: ";
-		cin >> tmp;
+		getline(cin, tmp);
 		Person::SetName(tmp);
 	}
 };
