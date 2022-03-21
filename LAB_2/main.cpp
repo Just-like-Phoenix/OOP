@@ -10,6 +10,7 @@
 #include <sstream>
 #include <deque>
 #include <vector>
+#include <stdexcept>
 
 using namespace std;
 
@@ -215,14 +216,314 @@ public:
 	}
 };
 
-int main()
-{
-	Menu menu;
+class CostErr {
+	int ErrCode;
+public:
+	CostErr() : ErrCode(0) {}
+	CostErr(int num) : ErrCode(num) {}
+	void what() { cout << "\n\nДанные введены неверно!\n"; }
+};
 
-	menu.CreateMenu(3, "Получить талон", "Показать очередь", "Работа с клиентами");
-	{
+class CarService {
+	int cost;
+	string name;
+	string _class;
+	int productClass;
+public:
+	CarService() : cost(0), productClass(0) {}
 
+	void SetCost(int num) { cost = num; }
+	int GetCost() { return cost; }
+
+	void SetName(string _name) { name = _name; }
+	string GetName() { return name; }
+
+	void SetProdClass(int num) {
+		productClass = num;
+		if (num == 1) _class = "Плановое ТО";
+		else if (num == 2) _class = "Ремонт";
+		else if (num == 3) _class = "Дитейлинг";
+	}
+	bool isPlannedMaintenance() {
+		if (productClass == 1) return true;
+		else return false;
+	}
+	bool isRepair() {
+		if (productClass == 2) return true;
+		else return false;
+	}
+	bool isDetailing() {
+		if (productClass == 3) return true;
+		else return false;
 	}
 
-	menu.StartMenu();
+	friend ostream& operator<<(ostream& stream, CarService& obj) {
+		cout << obj._class << " " << obj.GetName() << " " << obj.GetCost() << "$" << endl;
+		return stream;
+	}
+};
+
+class PlannedMaintenance : public CarService {
+public:
+	PlannedMaintenance(string name, int cost) { SetProdClass(1); SetName(name); if (cost < 0) throw 1; SetCost(cost); }
+	~PlannedMaintenance() { cout << "Данные введены неверно!"; }
+};
+
+class Repair : public CarService {
+public:
+	Repair(string name, int cost) { SetProdClass(2); SetName(name); SetCost(cost); }
+};
+
+class Detailing : public CarService {
+public:
+	Detailing(string name, int cost) { SetProdClass(3); SetName(name); SetCost(cost); }
+};
+
+class Cart {
+	vector<CarService> cart;
+	int totalCost = 0;
+public:
+	Cart() : cart(NULL) {}
+	void AddSome(CarService* obj) {
+		cart.push_back(*obj);
+		totalCost += obj->GetCost();
+	}
+	void ShowCart() {
+		if (cart.size() == 0) throw 1;
+		for (int i = 0; i < cart.size(); i++) {
+			cout << i + 1 << ") " << cart[i] << endl;
+		}
+		cout << "Итоговая стоимость: " << totalCost;
+	}
+	int GetTotalCost() { return totalCost; }
+};
+
+vector<CarService> arr;
+Cart cart;
+
+void TermFunc() {
+	cout << "Была вызвана функция завершения";
+	exit(-1);
+}
+
+void addPlannedMaintenance() {
+	PlannedMaintenance* tmp;
+	string name;
+	int cost;
+	while (1) {
+		system("cls");
+		cout << "Введите марку авто: ";
+		cin >> name;
+		cout << "Введите стоимость: ";
+		cin >> cost;
+		try {
+			tmp = new PlannedMaintenance(name, cost);
+			arr.push_back(*tmp);
+			break;
+		}
+		catch (...) {
+			cout << "\n\nДанные введены неверно!\n";
+			char sym;
+			cout << "Повторить ввод? (y/n): ";
+			cin >> sym;
+			if (sym == 'n') break;
+		}
+	}
+}
+
+void addRepair() {
+	Repair* tmp;
+	string name;
+	int cost;
+	while (1) {
+		system("cls");
+		cout << "Введите название агригата для ремонта: ";
+		cin >> name;
+		cout << "Введите стоимость: ";
+		cin >> cost;
+		try {
+			if (cost < 0) throw new CostErr(cost);
+			tmp = new Repair(name, cost);
+			arr.push_back(*tmp);
+			break;
+		}
+		catch (CostErr* exeption) {
+			exeption->what();
+			char sym;
+			cout << "Повторить ввод? (y/n): ";
+			cin >> sym;
+			if (sym == 'n') break;
+		}
+	}
+}
+
+void addDetailing() {
+	Detailing* tmp;
+	string name;
+	int cost;
+	while (1) {
+		system("cls");
+		cout << "Введите название услуги: ";
+		cin >> name;
+		cout << "Введите стоимость: ";
+		cin >> cost;
+		try {
+			if (cost < 0) throw cost;
+			tmp = new Detailing(name, cost);
+			arr.push_back(*tmp);
+			break;
+		}
+		catch (int exeption) {
+			cout << "\n\nДанные введены неверно (стоимость " << exeption << " < 0)\n";
+			char sym;
+			cout << "Повторить ввод? (y/n): ";
+			cin >> sym;
+			if (sym == 'n') break;
+		}
+	}
+}
+
+void ShowAll() {
+	try {
+		if (arr.size() == 0) throw 1;
+		for (int i = 0; i < arr.size(); i++) {
+			cout << i + 1 << ") " << arr[i] << endl;
+		}
+	}
+	catch (int) {
+		cout << "Нет товаров!";
+	}
+}
+
+void ShowPlannedMaintenance() {
+	int counter = 1;
+	bool exist = false;
+	try {
+		if (arr.size() == 0) throw 1;
+		for (int i = 0; i < arr.size(); i++) {
+			if (arr[i].isPlannedMaintenance()) {
+				cout << counter << ") " << arr[i] << endl;
+				counter++;
+				exist = true;
+			}
+		}
+		if (exist == false) throw false;
+	}
+	catch (int) {
+		cout << "Нет товаров!";
+	}
+	catch (bool) {
+		cout << "Нет товаров данной категории!";
+	}
+}
+
+void ShowRepair() {
+	int counter = 1;
+	bool exist = false;
+	try {
+		if (arr.size() == 0) throw 1;
+		for (int i = 0; i < arr.size(); i++) {
+			if (arr[i].isRepair()) {
+				cout << counter << ") " << arr[i] << endl;
+				counter++;
+				exist = true;
+			}
+		}
+		if (exist == false) throw false;
+	}
+	catch (int) {
+		cout << "Нет товаров!";
+	}
+	catch (bool) {
+		cout << "Нет товаров данной категории!";
+	}
+}
+
+void ShowDetailing() {
+	int counter = 1;
+	bool exist = false;
+	try {
+		if (arr.size() == 0) throw 1;
+		for (int i = 0; i < arr.size(); i++) {
+			if (arr[i].isDetailing()) {
+				cout << counter << ") " << arr[i] << endl;
+				counter++;
+				exist = true;
+			}
+		}
+		if (exist == false) throw false;
+	}
+	catch (int) {
+		cout << "Нет товаров!";
+	}
+	catch (bool) {
+		cout << "Нет товаров данной категории!";
+	}
+}
+
+void SetCart() {
+	while (1) {
+		system("cls");
+		ShowAll();
+
+		int choise;
+		cout << "Введите номер товара: ";
+		cin >> choise;
+		try {
+			if (choise < 1 || choise > arr.size()) throw 1;
+			cart.AddSome(&arr[choise - 1]);
+			break;
+		}
+		catch (int) {
+			cout << "\n\nТакого номера нет!";
+			char sym;
+			cout << "Повторить ввод? (y/n): ";
+			cin >> sym;
+			if (sym == 'n') break;
+		}
+	}
+}
+
+void ShowCart() {
+	try {
+		cart.ShowCart();
+	}
+	catch (int) {
+		cout << "Корзина пуста\n\n";
+		cout << "Итоговая стоимость: " << cart.GetTotalCost() << "$";
+	}
+}
+
+int main() {
+	Menu menu;
+	set_terminate(TermFunc);
+
+	menu.CreateMenu(3, "Добавить товар", "Просмотреть товары", "Корзина");
+	{
+		menu.sub[0].CreateMenu(3, "Плановое ТО", "Ремонт", "Дитейлинг");
+		{
+			menu.sub[0].function[0] = addPlannedMaintenance;
+			menu.sub[0].function[1] = addRepair;
+			menu.sub[0].function[2] = addDetailing;
+		}
+		menu.sub[1].CreateMenu(4, "Плановое ТО", "Ремонт", "Дитейлинг", "Все");
+		{
+			menu.sub[1].function[0] = ShowPlannedMaintenance;
+			menu.sub[1].function[1] = ShowRepair;
+			menu.sub[1].function[2] = ShowDetailing;
+			menu.sub[1].function[3] = ShowAll;
+		}
+		menu.sub[2].CreateMenu(2, "Добавить в корзину", "Показать корзину");
+		{
+			menu.sub[2].function[0] = SetCart;
+			menu.sub[2].function[1] = ShowCart;
+		}
+	}
+
+	bool running = true;
+	while (running)
+	{
+		menu.ShowMenu();
+		menu.Navigation(&running);
+	}
 }
