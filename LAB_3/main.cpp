@@ -1,197 +1,559 @@
 #include <iostream>
+#include <stdlib.h>
+#include <time.h>
 #include <conio.h>
 #include <stdarg.h>
-#include <fstream>
 #include <Windows.h>
+#include <string>
+#include <fstream>
+#include <iomanip>
+#include <sstream>
+#include <deque>
+#include <vector>
+#include <stdexcept>
 
 using namespace std;
 
-int keyget(int num)
-{
-	char button = 0;
-	button = _getch();
-	if (button == 27) return 69;
-	if (button == 13) return 27;
-	if (button == 72)  num--; // КОД 72 соответсвует Стрелке вверх
-	if (button == 80)  num++; // КОД 80 соответсвует Стрелке вниз
-	return num;
-}
+void enterNum(int* num) {
+	*num = 0;
 
-class Vector;
+	int counter = 0;
 
-class Matrix
-{
-public:
-
-
-
-	Matrix()
-	{
-		length_i = 1;
-		length_j = 1;
-		int** matrix = 0;
-	}
-
-	int GetI() { return length_i; }
-	int GetJ() { return length_j; }
-
-	void i_matrix(unsigned int LENGTH_I, unsigned int LENGTH_J, int** MATRIX)
-	{
-		length_i = LENGTH_I;
-		length_j = LENGTH_J;
-
-		matrix = new int* [length_i];
-		for (unsigned int i = 0; i < length_j; i++)
-			matrix[i] = new int[length_j];
-
-		for (unsigned int i = 0; i < length_j; i++)
-		{
-			for (unsigned int j = 0; j < length_i; j++)
-			{
-				matrix[i][j] = MATRIX[i][j];
+	while (counter < 9) {
+		char butt = _getch();
+		if (butt > 47 && butt < 58) {
+			*num = (*num * 10) + (butt - 48);
+			printf("%c", butt);
+			counter++;
+		}
+		else if (butt == 8 && counter != 0) {
+			*num /= 10;
+			if (*num == 1) {
+				*num = 0;
 			}
+			putchar('\b');
+			printf(" ");
+			putchar('\b');
+			if (counter > 0) counter--;
+		}
+		else if (butt == 13) {
+			break;
 		}
 	}
+	printf("\n");
+}
 
-	friend void MATRIX_INC_VECTOR(Matrix& matrix, Vector& vector);
+void SetColor(int text, int bg) {
+	HANDLE hStdOut = GetStdHandle(STD_OUTPUT_HANDLE);
+	SetConsoleTextAttribute(hStdOut, (WORD)((bg << 4) | text));
+}
 
-private:
-	int** matrix;
-	unsigned int length_i;
-	unsigned int length_j;
-};
+class Menu {
+	int bg = 2;
+	int countParam;
+	int paragraph;
+	int border;
+	bool running = true;
 
-class Vector
-{
+	typedef void (*voidFunctionPtr)();
+
+	Menu* main = this, * parent = NULL;
+	string* arr;
+	string header;
+
 public:
 
-	int* vector = new int[length];
+	Menu* sub;
+	voidFunctionPtr* function = NULL;
 
-	Vector()
-	{
-		length = 1;
-		int* Vector = 0;
+	Menu() { countParam = 0; paragraph = 1; arr = NULL; border = 0; sub = NULL; }
 
-	}
+	void CreateMenu(int num, const char* name, ...) {
+		if (main->parent == NULL) main->header = "Главное меню";
 
-	void i_vector(unsigned int LENGTH, int* VECTOR)
-	{
-		length = LENGTH;
-		for (unsigned int i = 0; i < length; i++)
-		{
-			vector[i] = VECTOR[i];
+		main->border = num;
+		va_list args;
+		va_start(args, num);
+
+		main->function = new voidFunctionPtr[num];
+		for (int i = 0; i < num; i++) main->function[i] = NULL;
+		main->arr = new string[num];
+		main->sub = new Menu[num];
+		for (int i = 0; i < num; i++) main->sub[i].parent = main;
+		int i = 0;
+		while (num != 0) {
+			main->arr[i] = va_arg(args, char*);
+			main->countParam++;
+			i++;
+			--num;
 		}
+		va_end(args);
 	}
 
-	friend class Matrix;
-	friend void MATRIX_INC_VECTOR(Matrix& matrix, Vector& vector);
-
-private:
-	unsigned int length;
-};
-
-void MATRIX_INC_VECTOR(Matrix& matrix, Vector& vector)
-{
-	int i_for_inc = matrix.length_i;
-	int j_for_inc = matrix.length_j;
-	for (int i = 0; i < j_for_inc; i++)
-	{
-		int temp = 0;
-		for (int j = 0; j < i_for_inc; j++)
-		{
-			temp += matrix.matrix[i][j] * vector.vector[i];
-		}
-		cout << "C[" << i << "] = " << temp << endl;
-	}
-}
-
-void SET_MATRIX_AND_VECTOR(int num, Matrix* m, Vector* v)
-{
-	int length_i, length_j;
-
-	int** matrix;
-
-	cout << "Enter a length i: "; // строки
-	cin >> length_i;
-	cout << "Enter a length j: "; //столбцы
-	cin >> length_j;
-
-	matrix = new int* [length_i];         // строки
-	for (int i = 0; i < length_j; i++)
-		matrix[i] = new int[length_j];   //столбцы
-
-	cout << "Enter Matrix: ";
-
-	for (int i = 0; i < length_j; i++)   // строки
-	{
-		for (int j = 0; j < length_i; j++)   //столбцы
-		{
-			cout << "A[" << i << "][" << j << "] = ";
-			cin >> matrix[i][j];
-		}
-	}
-	m->i_matrix(length_i, length_j, matrix);
-
-	cout << "Enter Vector: ";
-
-	int* vector = new int[length_j];
-
-	for (int i = 0; i < length_j; i++) {
-		cout << "B[" << i << "] = ";
-		cin >> vector[i];
-	}
-	v->i_vector(length_j, vector);
-}
-
-void main_menu(int num)
-{
-	Matrix matrix;
-	Vector vector;
-
-	int key = 0;
-	int buff = 0;
-	const int SIZE = 2;
-	do
-	{
+	void ShowMenu() {
 		system("cls");
+		SetConsoleCP(1251);
+		SetConsoleOutputCP(1251);
+		string menu;
+		if (main->parent != NULL) main->header = main->parent->arr[main->parent->paragraph - 1];
+		menu += "\n\n\n\n\n\n\n\n\t\t\t\t\t\t+--------------------+\n\t\t\t\t\t\t|";
 
-		if (buff == 27)
-		{
-			switch (key)
-			{
-			case 0:
-				SET_MATRIX_AND_VECTOR(0, &matrix, &vector);
-				break;
-			case 1:
-				MATRIX_INC_VECTOR(matrix, vector);
+		for (int j = 0; j < (20 - main->header.length()) / 2; j++) menu += " ";
+		menu += main->header;
+		for (int j = 0; j < 20 - (main->header.length() + (20 - main->header.length()) / 2); j++) menu += " ";
+		menu += "|\n\t\t\t\t\t\t+--------------------+\n";
+
+		if (main->arr != NULL) {
+			for (int i = 0; i < main->countParam; i++) {
+				menu += "\t\t\t\t\t\t|";
+				if (i == (main->paragraph - 1)) {
+					cout << menu;
+					SetColor(0, bg);
+					cout << main->arr[i];
+					if (main->arr[i].length() < 20) {
+						for (int j = 0; j < 20 - main->arr[i].length(); j++) cout << " ";
+					}
+					SetColor(7, 0);
+					menu.clear();
+				}
+				else {
+					menu += main->arr[i];
+					if (main->arr[i].length() < 20) {
+						for (int j = 0; j < 20 - main->arr[i].length(); j++) menu += " ";
+					}
+				}
+				menu += "|\n\t\t\t\t\t\t+--------------------+\n";
+			}
+			cout << menu;
+		}
+		else main = main->parent;
+
+	}
+
+	void Navigation(bool* running) {
+		char keycap = _getch();
+
+		if (keycap == 80) main->paragraph++;
+		else if (keycap == 72) main->paragraph--;
+		else if (keycap == 13) {
+			if (main->function[main->paragraph - 1] == NULL && main->sub[main->paragraph - 1].arr != NULL) main = &main->sub[main->paragraph - 1];
+			else if (main->function[main->paragraph - 1] != NULL) {
+				system("cls");
+				main->function[main->paragraph - 1]();
 				_getch();
-				break;
-			}
-			system("cls");
-		}
-		if (buff < 0)
-			key = SIZE - 1;
-		else
-			key = buff % SIZE;
-		char** title;
-		title = new char* [SIZE] {(char*)"Set array A and B", (char*)"A inc B"};
-		for (int i = 0; i < SIZE; i++)
-		{
-			if (key == i)
-			{
-				std::cout << ">" << title[i] << "<\n";
-			}
-			else
-			{
-				std::cout << title[i] << "\n";
 			}
 		}
-		buff = keyget(key);
-	} while (buff != 69);
-	return;
+		else if (keycap == 27) {
+			if (main->parent != NULL) {
+				main->paragraph = 1;
+				main = main->parent;
+			}
+			else if (main->parent == NULL) *running = false;
+		}
+		else if (keycap == 83) {
+			vector<string> arr = { "Синий", "Зелёный", "Голубой", "Красный", "Розовый", "Жёлтый" };
+			int paragraph = 0;
+			char keycap = NULL;
+			while (keycap != 27) {
+				system("cls");
+				SetConsoleCP(1251);
+				SetConsoleOutputCP(1251);
+
+				string menu;
+				string header = "НАСТРОЙКА";
+				menu += "\n\n\n\n\n\n\n\n\t\t\t\t\t\t+--------------------+\n\t\t\t\t\t\t|";
+
+				for (int j = 0; j < (20 - header.length()) / 2; j++) menu += " ";
+				menu += header;
+				for (int j = 0; j < 20 - (header.length() + (20 - header.length()) / 2); j++) menu += " ";
+				menu += "|\n\t\t\t\t\t\t+--------------------+\n";
+
+				for (int i = 0; i < 6; i++) {
+					menu += "\t\t\t\t\t\t|";
+					if (i == paragraph) {
+						cout << menu;
+						SetColor(0, i + 1);
+						cout << arr[i];
+						if (arr[i].length() < 20) {
+							for (int j = 0; j < 20 - arr[i].length(); j++) cout << " ";
+						}
+						SetColor(7, 0);
+						menu.clear();
+					}
+					else {
+						menu += arr[i];
+						if (arr[i].length() < 20) {
+							for (int j = 0; j < 20 - arr[i].length(); j++) menu += " ";
+						}
+					}
+					menu += "|\n\t\t\t\t\t\t+--------------------+\n";
+				}
+				cout << menu;
+
+				keycap = _getch();
+
+				if (keycap == 80) paragraph++;
+				else if (keycap == 72) paragraph--;
+				else if (keycap == 13) {
+					bg = paragraph + 1;
+					keycap = 27;
+				}
+
+				if (paragraph > 5) paragraph = 0;
+				else if (paragraph < 0) paragraph = 5;
+			}
+		}
+
+		if (main->paragraph > main->border) main->paragraph = 1;
+		else if (main->paragraph < 1) main->paragraph = main->border;
+	}
+
+	void StartMenu() {
+		while (running) {
+			ShowMenu();
+			Navigation(&running);
+		}
+	}
+};
+
+class CostErr {
+	int ErrCode;
+public:
+	CostErr() : ErrCode(0) {}
+	CostErr(int num) : ErrCode(num) {}
+	void what() { cout << "\n\nДанные введены неверно!\n"; }
+};
+
+class CarService 
+{
+	int cost;
+	string name;
+	string _class;
+	int productClass;
+public:
+	CarService() : cost(0), productClass(0) {}
+
+	void SetCost(int num) { cost = num; }
+	int GetCost() { return cost; }
+
+	void SetName(string _name) { name = _name; }
+	string GetName() { return name; }
+
+	void SetProdClass(int num) 
+	{
+		productClass = num;
+		if (num == 1) _class = "Плановое ТО";
+		else if (num == 2) _class = "Ремонт";
+		else if (num == 3) _class = "Дитейлинг";
+	}
+	bool isPlannedMaintenance() 
+	{
+		if (productClass == 1) return true;
+		else return false;
+	}
+	bool isRepair() 
+	{
+		if (productClass == 2) return true;
+		else return false;
+	}
+	bool isDetailing() 
+	{
+		if (productClass == 3) return true;
+		else return false;
+	}
+
+	friend ostream& operator<<(ostream& stream, CarService& obj) 
+	{
+		cout.setf(ios::right);
+		cout.width(30);
+		cout.setf(ios::showpos);
+		cout.setf(ios::showpoint);
+		cout.setf(ios::fixed);
+		cout << obj._class << " " << obj.GetName() << " " << obj.GetCost() << "$" << endl;
+		cout.unsetf(ios::right);
+		cout.unsetf(ios::showpos);
+		cout.unsetf(ios::showpoint);
+		cout.unsetf(ios::fixed);
+		return stream;
+	}
+};
+
+class PlannedMaintenance : public CarService {
+public:
+	PlannedMaintenance(string name, int cost) { SetProdClass(1); SetName(name); if (cost < 0) throw 1; SetCost(cost); }
+	~PlannedMaintenance() { cout << "Данные введены неверно!"; }
+};
+
+class Repair : public CarService {
+public:
+	Repair(string name, int cost) { SetProdClass(2); SetName(name); SetCost(cost); }
+};
+
+class Detailing : public CarService {
+public:
+	Detailing(string name, int cost) { SetProdClass(3); SetName(name); SetCost(cost); }
+};
+
+class Cart {
+	vector<CarService> cart;
+	int totalCost = 0;
+public:
+	Cart() : cart(NULL) {}
+	void AddSome(CarService* obj) {
+		cart.push_back(*obj);
+		totalCost += obj->GetCost();
+	}
+	void ShowCart() {
+		if (cart.size() == 0) throw 1;
+		for (int i = 0; i < cart.size(); i++) {
+			cout << i + 1 << ") " << cart[i] << endl;
+		}
+		cout << "Итоговая стоимость: " << totalCost;
+	}
+	int GetTotalCost() { return totalCost; }
+};
+
+vector<CarService> arr;
+Cart cart;
+
+template <class T> T enter() {
+	T tmp;
+	while (true) {
+		cin >> tmp;
+		if (cin.good()) {
+			break;
+		}
+		else if (cin.fail()) {
+			cin.clear();
+			cin.ignore(5, '\n');
+		}
+	}
+	return tmp;
 }
 
-int main()
-{
-	main_menu(0);
+void TermFunc() {
+	cout << "Была вызвана функция завершения";
+	exit(-1);
+}
+
+void addPlannedMaintenance() {
+	PlannedMaintenance* tmp;
+	string name;
+	int cost;
+	while (1) {
+		system("cls");
+		cout << "Введите марку авто: ";
+		name = enter<string>();
+		cout << "Введите стоимость: ";
+		cost = enter<int>();
+		try {
+			tmp = new PlannedMaintenance(name, cost);
+			arr.push_back(*tmp);
+			break;
+		}
+		catch (...) {
+			cout << "\n\nДанные введены неверно!\n";
+			char sym;
+			cout << "Повторить ввод? (y/n): ";
+			sym = enter<char>();
+			if (sym == 'n') break;
+		}
+	}
+}
+
+void addRepair() {
+	Repair* tmp;
+	string name;
+	int cost;
+	while (1) {
+		system("cls");
+		cout << "Введите название агригата для ремонта: ";
+		name = enter<string>();
+		cout << "Введите стоимость: ";
+		cost = enter<int>();
+		try {
+			if (cost < 0) throw new CostErr(cost);
+			tmp = new Repair(name, cost);
+			arr.push_back(*tmp);
+			break;
+		}
+		catch (CostErr* exeption) {
+			exeption->what();
+			char sym;
+			cout << "Повторить ввод? (y/n): ";
+			sym = enter<char>();
+			if (sym == 'n') break;
+		}
+	}
+}
+
+void addDetailing() {
+	Detailing* tmp;
+	string name;
+	int cost;
+	while (1) {
+		system("cls");
+		cout << "Введите название услуги: ";
+		name = enter<string>();
+		cout << "Введите стоимость: ";
+		cost = enter<int>();
+		try {
+			if (cost < 0) throw cost;
+			tmp = new Detailing(name, cost);
+			arr.push_back(*tmp);
+			break;
+		}
+		catch (int exeption) {
+			cout << "\n\nДанные введены неверно (стоимость " << exeption << " < 0)\n";
+			char sym;
+			cout << "Повторить ввод? (y/n): ";
+			sym = enter<char>();
+			if (sym == 'n') break;
+		}
+	}
+}
+
+void ShowAll() {
+	try {
+		if (arr.size() == 0) throw 1;
+		for (int i = 0; i < arr.size(); i++) {
+			cout << i + 1 << ") " << arr[i] << endl;
+		}
+	}
+	catch (int) {
+		cout << "Нет товаров!";
+	}
+}
+
+void ShowPlannedMaintenance() {
+	int counter = 1;
+	bool exist = false;
+	try {
+		if (arr.size() == 0) throw 1;
+		for (int i = 0; i < arr.size(); i++) {
+			if (arr[i].isPlannedMaintenance()) {
+				cout << counter << ") " << arr[i] << endl;
+				counter++;
+				exist = true;
+			}
+		}
+		if (exist == false) throw false;
+	}
+	catch (int) {
+		cout << "Нет товаров!";
+	}
+	catch (bool) {
+		cout << "Нет товаров данной категории!";
+	}
+}
+
+void ShowRepair() {
+	int counter = 1;
+	bool exist = false;
+	try {
+		if (arr.size() == 0) throw 1;
+		for (int i = 0; i < arr.size(); i++) {
+			if (arr[i].isRepair()) {
+				cout << counter << ") " << arr[i] << endl;
+				counter++;
+				exist = true;
+			}
+		}
+		if (exist == false) throw false;
+	}
+	catch (int) {
+		cout << "Нет товаров!";
+	}
+	catch (bool) {
+		cout << "Нет товаров данной категории!";
+	}
+}
+
+void ShowDetailing() {
+	int counter = 1;
+	bool exist = false;
+	try {
+		if (arr.size() == 0) throw 1;
+		for (int i = 0; i < arr.size(); i++) {
+			if (arr[i].isDetailing()) {
+				cout << counter << ") " << arr[i] << endl;
+				counter++;
+				exist = true;
+			}
+		}
+		if (exist == false) throw false;
+	}
+	catch (int) {
+		cout << "Нет товаров!";
+	}
+	catch (bool) {
+		cout << "Нет товаров данной категории!";
+	}
+}
+
+void SetCart() {
+	while (1) {
+		system("cls");
+		ShowAll();
+
+		int choise;
+		cout << "Введите номер товара: ";
+		cin >> choise;
+		try {
+			if (choise < 1 || choise > arr.size()) throw 1;
+			cart.AddSome(&arr[choise - 1]);
+			break;
+		}
+		catch (int) {
+			cout << "\n\nТакого номера нет!";
+			char sym;
+			cout << "Повторить ввод? (y/n): ";
+			cin >> sym;
+			if (sym == 'n') break;
+		}
+	}
+}
+
+void ShowCart() {
+	try {
+		cart.ShowCart();
+	}
+	catch (int) {
+		cout << "Корзина пуста\n\n";
+		cout << "Итоговая стоимость: " << cart.GetTotalCost() << "$";
+	}
+}
+
+int main() {
+	Menu menu;
+	set_terminate(TermFunc);
+
+	menu.CreateMenu(3, "Добавить товар", "Просмотреть товары", "Корзина");
+	{
+		menu.sub[0].CreateMenu(3, "Плановое ТО", "Ремонт", "Дитейлинг");
+		{
+			menu.sub[0].function[0] = addPlannedMaintenance;
+			menu.sub[0].function[1] = addRepair;
+			menu.sub[0].function[2] = addDetailing;
+		}
+		menu.sub[1].CreateMenu(4, "Плановое ТО", "Ремонт", "Дитейлинг", "Все");
+		{
+			menu.sub[1].function[0] = ShowPlannedMaintenance;
+			menu.sub[1].function[1] = ShowRepair;
+			menu.sub[1].function[2] = ShowDetailing;
+			menu.sub[1].function[3] = ShowAll;
+		}
+		menu.sub[2].CreateMenu(2, "Добавить в корзину", "Показать корзину");
+		{
+			menu.sub[2].function[0] = SetCart;
+			menu.sub[2].function[1] = ShowCart;
+		}
+	}
+
+	bool running = true;
+	while (running)
+	{
+		menu.ShowMenu();
+		menu.Navigation(&running);
+	}
 }
