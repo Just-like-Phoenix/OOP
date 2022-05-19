@@ -1,132 +1,120 @@
-#include <iostream>
-#include <conio.h>
-#include <stdarg.h>
-#include <fstream>
-#include <Windows.h>
+#include "Menu.h"
 
-using namespace std;
-
-int keyget(int num)
-{
-	char button = 0;
-	button = _getch();
-	if (button == 27) return 69;
-	if (button == 13) return 27;
-	if (button == 72)  num--; // КОД 72 соответсвует Стрелке вверх
-	if (button == 80)  num++; // КОД 80 соответсвует Стрелке вниз
-	return num;
+void Replace(char* buf, char replace, char to) {
+	for (int i = 0; i < 60; i++) {
+		if (buf[i] == replace) buf[i] = to;
+	}
 }
 
-class Data {
-protected:
-	string surname;
-	int* salaries;
+class ProjectManagement {
 public:
-	Data(string surname, const int* salaries) {
-		cout << "Конструктор Data" << endl;
-		this->salaries = new int[3];
-		this->surname = surname;
-		for (int i = 0; i < 3; i++)
-		{
-			this->salaries[i] = salaries[i];
+
+	string name;
+	int priority;
+
+	ProjectManagement(string _name, double _priority) : name(_name), priority(_priority) {};
+
+	friend bool operator<(ProjectManagement obj1, ProjectManagement obj2) {
+		return obj1.priority < obj2.priority;
+	}
+	friend bool operator>(ProjectManagement obj1, ProjectManagement obj2) {
+		return obj1.priority > obj2.priority;
+	}
+	friend ostream& operator<<(ostream& str, ProjectManagement obj) {
+		return str << "Название: " << obj.name << "\n   Приоритет: " << obj.priority << endl;
+	}
+};
+
+priority_queue < ProjectManagement, vector<ProjectManagement>, less<vector<ProjectManagement>::value_type>> que;
+queue<ProjectManagement> stk;
+
+void Add() {
+	string name;
+	string buf;
+	int priority;
+	cout << "Введите название задачи: ";
+	getline(cin, name);
+	cout << "Введите приоритет задачи: ";
+	getline(cin, buf);
+	priority = atoi(buf.c_str());
+	que.push(ProjectManagement(name, priority));
+	system("cls");
+	cout << "Добавлено!";
+}
+
+void Show() {
+	int i = 1;
+	if (que.empty()) {
+		cout << "Очередь пуста!";
+	}
+	else {
+		while (!que.empty()) {
+			cout << i << ". " << que.top();
+			stk.push(que.top());
+			que.pop();
+			i++;
+		}
+		while (!stk.empty()) {
+			que.push(stk.front());
+			stk.pop();
 		}
 	}
-	~Data() {
-		cout << "Деструктор Data" << endl;
-		delete[] salaries;
+}
+
+void EndPrior() {
+	cout << "Завершена задача " << "\"" + que.top().name + "\"";
+	que.pop();
+}
+
+void Redact() {
+	Show();
+
+	cout << "\n\nВыберите задачу: ";
+	int choise;
+	cin >> choise;
+	if (choise < 0 || choise > que.size()) {
+		cout << "Такой позиции нет!";
 	}
-};
-
-class Tax {
-protected:
-	int incomeTax;
-public:
-	Tax(int incomeTax) {
-		cout << "Конструктор Tax" << endl;
-		this->incomeTax = incomeTax;
-	}
-};
-
-class PaymentForm : public Data, public Tax {
-public:
-	PaymentForm(string surname, int* salaries, int incomeTax) : Data(surname, salaries), Tax(incomeTax) {
-		cout << "Конструктор PaymentForm" << endl;
-	};
-
-	void Print() {
-		cout << "Фамилия сотрудника: " << this->surname << endl << endl;
-		for (int i = 0; i < 3; i++)
-		{
-			cout << "Налоговые вычеты для " << i + 1 << "-й зарплаты: " << this->incomeTax * this->salaries[i] / 100 << endl;
-		}
-	}
-};
-
-void main_menu(int num)
-{
-	int salaries[3] = { 1000, 1200, 800 };
-	PaymentForm form1("Иванов", salaries, 20);
-	int n = 0;
-
-	int key = 0;
-	int buff = 0;
-	const int SIZE = 1;
-	do
-	{
+	else {
+		string _name;
+		double _priority;
 		system("cls");
-
-		if (buff == 27)
-		{
-			switch (key)
-			{
-				/*case 0:
-					for (int i = 0; i < 255; ++i)
-					{
-						if (salaries[i] % 2 != 0 || salaries[i] == 0)
-						{
-							break;
-						}
-						else
-						{
-							n++;
-						}
-					}
-
-					cout << "Введите зарплату: ";
-					cin >> salaries[n];
-					break;*/
-			case 0:
-				form1.Print();
-				system("pause");
-				break;
+		cout << "Введите название задачи: ";
+		cin >> _name;
+		cout << "Введите приоритет задачи: ";
+		cin >> _priority;
+		int i = 1;
+		while (!que.empty()) {
+			if (choise == i) {
+				que.pop();
+				que.push(ProjectManagement(_name, _priority));
 			}
-			system("cls");
+			stk.push(que.top());
+			que.pop();
+			i++;
 		}
-		if (buff < 0)
-			key = SIZE - 1;
-		else
-			key = buff % SIZE;
-		char** title;
-		title = new char* [SIZE] {/*(char*)"Задать зарплату", */(char*)"Вывести"};
-		for (int i = 0; i < SIZE; i++)
-		{
-			if (key == i)
-			{
-				std::cout << ">" << title[i] << "<\n";
-			}
-			else
-			{
-				std::cout << title[i] << "\n";
-			}
+		while (!stk.empty()) {
+			que.push(stk.front());
+			stk.pop();
 		}
-		buff = keyget(key);
-	} while (buff != 69);
-	return;
+		system("cls");
+		cout << "Изменено!";
+	}
 }
 
-int main()
-{
+int main() {
 	SetConsoleCP(1251);
 	SetConsoleOutputCP(1251);
-	main_menu(0);
+
+	Menu menu;
+
+	menu.CreateMenu(4, "Добавить", "Просмотреть", "Редактировать", "Завершить приор.");
+	{
+		menu.function[0] = Add;
+		menu.function[1] = Show;
+		menu.function[2] = Redact;
+		menu.function[3] = EndPrior;
+	}
+
+	menu.Start();
 }
