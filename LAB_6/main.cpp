@@ -1,9 +1,11 @@
 #include "Menu.h"
 
-void Replace(char* buf, char replace, char to) {
-	for (int i = 0; i < 60; i++) {
-		if (buf[i] == replace) buf[i] = to;
+bool isNumber(const string& str)
+{
+	for (char const& c : str) {
+		if (std::isdigit(c) == 0) return false;
 	}
+	return true;
 }
 
 class ProjectManagement {
@@ -30,16 +32,32 @@ queue<ProjectManagement> stk;
 
 void Add() {
 	string name;
-	string buf;
-	int priority;
+	string priority;
+	bool prov = false;
 	cout << "Введите название задачи: ";
 	getline(cin, name);
-	cout << "Введите приоритет задачи: ";
-	getline(cin, buf);
-	priority = atoi(buf.c_str());
-	que.push(ProjectManagement(name, priority));
-	system("cls");
-	cout << "Добавлено!";
+	cout << "Введите приоритет задачи от 1 до 10: ";
+	getline(cin, priority);
+	if (isNumber(priority) == true)
+	{
+		if (1>= atoi(priority.c_str()) || atoi(priority.c_str()) <= 10)
+		{
+			que.push(ProjectManagement(name, atoi(priority.c_str())));
+			system("cls");
+			cout << "Добавлено!";
+		}
+		else
+		{
+			system("cls");
+			cout << "Значение за пределами допустимых!";
+		}
+	}
+	else
+	{
+		system("cls");
+		cout << "Значение не является числом!";
+	}
+
 }
 
 void Show() {
